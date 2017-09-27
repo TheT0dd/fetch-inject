@@ -15,7 +15,23 @@ import {
  * @returns {Promise<Object[]>} A promise which resolves to an `Array` of
  *     Objects containing `Response` `Body` properties used by the module.
  */
-const fetchInject = function (inputs, promise) {
+const fetchInject = function (...args) {
+  let inputs
+  let params = {}
+  let promise
+
+  if (args.length === 3) {
+    [inputs, params, promise] = args
+  } else if (args.length === 2) {
+    if (args[1] instanceof Promise) {
+      [inputs, promise] = args
+    } else {
+      [inputs, params] = args
+    }
+  } else {
+    [inputs] = args
+  }
+
   if (!(inputs && Array.isArray(inputs))) return Promise.reject(new TypeError('`inputs` must be an array'))
   if (promise && !(promise instanceof Promise)) return Promise.reject(new TypeError('`promise` must be a promise'))
 
@@ -24,7 +40,7 @@ const fetchInject = function (inputs, promise) {
   const thenables = []
 
   inputs.forEach(input => deferreds.push(
-    window.fetch(input).then(res => {
+    window.fetch(input, params).then(res => {
       return [res.clone().text(), res.blob()]
     }).then(promises => {
       return Promise.all(promises).then(resolved => {
